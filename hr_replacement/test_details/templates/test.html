@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test</title>
+    <style>
+        .result-frame {
+            position: fixed;
+            bottom: 10px; /* Position at bottom-right */
+            right: 10px;
+            width: 200px;
+            height: 150px;
+            border: 2px solid #000;
+            background-color: #fff;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        #result-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <h1>Answer the following question(s):</h1>
+    <form method="post" action="/result/">
+        {% csrf_token %}
+        {% for question in questions %}
+            <div>
+                <p><strong>Q{{ forloop.counter }}: </strong></p>
+                <pre>{{ question.Question|safe|linebreaksbr }}</pre>
+                {% for option in question.Options %}
+                    <label>
+                        <input type="radio" name="{{ question.id }}" value="{{ option.value }}">
+                        {{ option.display }}
+                    </label><br>
+                {% endfor %}
+            </div>
+            <hr>
+        {% endfor %}
+        <button type="submit">Submit</button>
+    </form>
+
+    <!-- Frame to show the processed result -->
+    <div class="result-frame" id="result-frame">
+        <img id="result-img" />
+    </div>
+
+    <script>
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/video_stream/');
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        const video = document.createElement('video');
+        video.style.display = "none";  // Hide the webcam video element
+
+        const constraints = {
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: "user"
+            }
+        };
+
+        // Wait for the video metadata to be loaded before accessing its width and height
+        video.onloadedmetadata = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        };
+
+        // Start accessing the webcam
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then((stream) => {
+                console.log("Webcam stream started successfully");
+                video.srcObject = stream;
+                video.play();
+                setInterval(() => {
+                    // Draw the current frame from the video to the canvas
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    // Convert the canvas content to a JPEG image and send it over WebSocket
+                    canvas.toBlob((blob) => {
+                        socket.send(blob);
+                    }, 'image/jpeg');
+                }, 100);
+            })
+            .catch((error) => {
+                console.error('Error accessing webcam:', error);
+            });
+
+        // Handle received image from WebSocket server
+        socket.onmessage = function(event) {
+            console.log("Received data from WebSocket:", event.data);
+            const img = document.createElement('img');
+            const url = URL.createObjectURL(event.data);
+            img.src = url;
+
+            // Display the result in the result-frame div
+            const resultFrame = document.getElementById('result-frame');
+            const resultImg = document.getElementById('result-img');
+            resultImg.src = url;
+        };
+
+        // WebSocket event handlers
+        socket.onopen = function() {
+            console.log('WebSocket connection established.');
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        socket.onclose = function() {
+            console.log('WebSocket connection closed.');
+        };
+
+        // Ensure the WebSocket connection is closed when the page is about to unload
+        window.onbeforeunload = function() {
+            socket.close();
+        };
+    </script>
+</body>
+</html>

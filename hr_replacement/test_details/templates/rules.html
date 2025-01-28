@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Rules</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .rules {
+            margin-bottom: 20px;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        ul {
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Test Rules</h2>
+        <p>Please read and accept the following rules before starting the test:</p>
+        <div class="rules">
+            <ul>
+                <li>Rule 1: No cheating is allowed.</li>
+                <li>Rule 2: You must complete the test in one session.</li>
+                <li>Rule 3: Ensure a stable internet connection.</li>
+                <li>Rule 4: The timer will not pause once the test begins.</li>
+            </ul>
+        </div>
+
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div>
+                <label for="confirm_rules">
+                    <input type="checkbox" id="confirm_rules" name="confirm_rules"> I have read and agree to the rules.
+                </label>
+            </div>
+            <button type="submit">Start Test</button>
+        </form>
+    </div>
+</body>
+</html>
